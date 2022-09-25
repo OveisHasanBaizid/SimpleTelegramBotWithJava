@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.File;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class JavaProBot extends TelegramLongPollingBot {
     @Override
@@ -68,10 +69,8 @@ public class JavaProBot extends TelegramLongPollingBot {
     public void getPhoto(Update update) throws TelegramApiException {
         List<PhotoSize> photos = update.getMessage().getPhoto();
 
-        String file_id = photos.stream()
-                .sorted(Comparator.comparing(PhotoSize::getFileSize).reversed())
-                .findFirst()
-                .orElse(null).getFileId();
+        String file_id = Objects.requireNonNull(photos.stream().max(Comparator.comparing(PhotoSize::getFileSize))
+                .orElse(null)).getFileId();
 
         GetFile getFile = new GetFile(file_id);
 
@@ -82,10 +81,11 @@ public class JavaProBot extends TelegramLongPollingBot {
     public String getList(){
         StringBuilder stringBuilder = new StringBuilder();
         String[] listNameFiles = new File("Data").list();
+        assert listNameFiles != null;
         if (listNameFiles.length==0)
             stringBuilder.append("list is empty.");
         for (int i = 0; i < listNameFiles.length ; i++) {
-            stringBuilder.append((i+1)+" - "+listNameFiles[i]+"\n");
+            stringBuilder.append(i + 1).append(" - ").append(listNameFiles[i]).append("\n");
         }
         return stringBuilder.toString();
     }
@@ -104,9 +104,10 @@ public class JavaProBot extends TelegramLongPollingBot {
     }
     public void findFiles(int n , long chatId) throws TelegramApiException {
         File[] files = new File("Data").listFiles();
-        if (n<1 || n>files.length){
-            sendMessage(chatId , "number input invalid.");
+        if (files != null && (n < 1 || n > files.length)) {
+            sendMessage(chatId, "number input invalid.");
         }
+        assert files != null;
         String format = FilenameUtils.getExtension(files[n-1].getName());
         switch (format){
             case "tmp" -> sendPhoto(chatId , files[n-1]);
